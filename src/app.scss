@@ -1,0 +1,5 @@
+@use 'sass:color';
+@use './sass/variables' as *;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
