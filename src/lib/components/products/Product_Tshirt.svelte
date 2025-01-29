@@ -9,8 +9,6 @@
 		'https://blabbttpifwpmqyddbvp.supabase.co/storage/v1/object/public/mockups/unisex-tshirt/front';
 
 	let selectedColor = $state('White'); // Default color
-
-	// Dynamically compute the product image URL
 	let productImage = $derived(() => `${baseUrl}/${selectedColor}.webp`);
 
 	let {
@@ -21,14 +19,61 @@
 		width = 200,
 		height = 150,
 		stroke = 'blue',
-		strokeWidth = 2,
-		canvasWidth = 400,
-		canvasHeight = 400
+		strokeWidth = 2
 	} = $props();
 
 	let canvas: Canvas | null = null;
 	let canvasElement: HTMLCanvasElement | null = null;
 	let uploadedImageObject: FabricImage | null = null;
+	let containerElement: HTMLDivElement | null = null;
+
+	// Responsive square canvas dimensions
+	let canvasSize = $state(400);
+	let prevCanvasSize = $state(400);
+
+	// Keep previous dimensions updated when canvas size changes
+	$effect(() => {
+		prevCanvasSize = canvasSize;
+	});
+
+	// Observe container size changes & maintain 1:1 aspect ratio
+	$effect(() => {
+		if (containerElement) {
+			const observer = new ResizeObserver((entries) => {
+				for (let entry of entries) {
+					let newSize = entry.contentRect.width; // Ensure square shape
+					canvasSize = newSize;
+					resizeCanvas(newSize);
+				}
+			});
+			observer.observe(containerElement);
+			return () => observer.disconnect();
+		}
+	});
+
+	// Window Resize Listener
+	$effect(() => {
+		if (typeof window !== 'undefined' && containerElement) {
+			const observer = new ResizeObserver((entries) => {
+				for (let entry of entries) {
+					let newSize = entry.contentRect.width;
+					canvasSize = newSize;
+					resizeCanvas(newSize);
+				}
+			});
+			observer.observe(containerElement);
+			return () => observer.disconnect();
+		}
+	});
+
+	// ✅ Prevents SSR Issues - Only Runs in Browser
+	if (typeof window !== 'undefined') {
+		window.addEventListener('resize', () => {
+			let newSize = containerElement?.clientWidth || window.innerWidth * 0.6;
+			canvasSize = newSize;
+			resizeCanvas(newSize);
+		});
+	}
 
 	$effect(() => {
 		if (canvasElement) {
@@ -38,11 +83,11 @@
 
 	function initializeCanvas() {
 		if (canvas) {
-			canvas.clear(); // Clear the canvas if it already exists
+			canvas.clear();
 		} else if (canvasElement) {
 			canvas = new Canvas(canvasElement, {
-				width: canvasWidth,
-				height: canvasHeight,
+				width: canvasSize,
+				height: canvasSize,
 				backgroundColor: 'rgba(0, 0, 0, 0)',
 				enableRetinaScaling: true,
 				preserveObjectStacking: true
@@ -57,6 +102,26 @@
 		}
 	}
 
+	// Resize Fabric.js canvas dynamically & preserve scaling
+	function resizeCanvas(newSize: number) {
+		if (!canvas) return;
+
+		let scaleRatio = newSize / prevCanvasSize;
+
+		canvas.getObjects().forEach((obj) => {
+			obj.scaleX = (obj.scaleX || 1) * scaleRatio;
+			obj.scaleY = (obj.scaleY || 1) * scaleRatio;
+			obj.left = (obj.left || 0) * scaleRatio;
+			obj.top = (obj.top || 0) * scaleRatio;
+			obj.setCoords();
+		});
+
+		canvas.setDimensions({ width: newSize, height: newSize });
+		canvas.renderAll();
+
+		prevCanvasSize = newSize;
+	}
+
 	function addProductImage() {
 		const img = new Image();
 		img.src = productImage();
@@ -68,8 +133,8 @@
 				evented: false,
 				left: 0,
 				top: 0,
-				scaleX: canvasWidth / img.width,
-				scaleY: canvasHeight / img.height
+				scaleX: canvasSize / img.width,
+				scaleY: canvasSize / img.height
 			});
 
 			canvas?.add(fabricImg);
@@ -88,10 +153,10 @@
 			top,
 			width,
 			height,
-			fill: 'rgba(0, 0, 0, 0)', // Transparent fill
+			fill: 'rgba(0, 0, 0, 0)',
 			stroke,
 			strokeWidth,
-			selectable: false, // Non-interactive
+			selectable: false,
 			evented: false
 		});
 
@@ -99,6 +164,7 @@
 		canvas?.renderAll();
 	}
 
+	// ✅ **Preserved: Handles user uploads**
 	function addUploadedImage(imageUrl: string) {
 		if (uploadedImageObject) {
 			canvas?.remove(uploadedImageObject);
@@ -109,9 +175,7 @@
 		img.crossOrigin = 'anonymous';
 
 		img.onload = () => {
-			const scaleX = width / img.width;
-			const scaleY = height / img.height;
-			const scale = Math.min(scaleX, scaleY);
+			const scale = width / img.width;
 
 			const fabricImg = new FabricImage(img, {
 				left: left + width / 2,
@@ -156,7 +220,6 @@
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter' || event.key === ' ') {
-			// Prevent default so space/enter doesn't scroll the page
 			event.preventDefault();
 			toggleShape();
 		}
@@ -164,13 +227,16 @@
 </script>
 
 <ProductCard productType="T-Shirt" {globalImage} bind:localImage>
-	<canvas
-		bind:this={canvasElement}
-		id="tshirt-canvas"
-		class="mockup-canvas pointer-events-auto rounded-t-lg"
-	></canvas>
+	<div bind:this={containerElement} class="relative mx-auto aspect-[1/1] w-full max-w-[600px]">
+		<canvas
+			bind:this={canvasElement}
+			id="tshirt-canvas"
+			class="mockup-canvas pointer-events-auto absolute inset-0 h-full w-full rounded-t-lg"
+		></canvas>
+	</div>
 
-	<!-- Color Picker Button -->
+	<!-- 🎨 Color Picker Button -->
+	<!-- 🎨 Color Picker Button -->
 	<div class="relative">
 		<div
 			class="icon absolute bottom-5 left-5 z-30"
