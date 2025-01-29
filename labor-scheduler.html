@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Labor Scheduler</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 20px;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 20px;
+			}
+			th,
+			td {
+				border: 1px solid #ccc;
+				padding: 10px;
+				text-align: center;
+			}
+			th {
+				background-color: #f4f4f4;
+			}
+			.total-row {
+				font-weight: bold;
+				background-color: #f9f9f9;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Labor Scheduler</h1>
+
+		<button id="addRowButton">Add Employee</button>
+
+		<table id="schedulerTable">
+			<thead>
+				<tr>
+					<th>Pay Rate (hr)</th>
+					<th>Employee Name</th>
+					<th colspan="3">Sunday</th>
+					<th colspan="3">Monday</th>
+					<th colspan="3">Tuesday</th>
+					<th colspan="3">Wednesday</th>
+					<th colspan="3">Thursday</th>
+					<th colspan="3">Friday</th>
+					<th colspan="3">Saturday</th>
+					<th>Total Hours</th>
+				</tr>
+				<tr>
+					<th></th>
+					<th></th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th>IN</th>
+					<th>OUT</th>
+					<th>HRS</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="employeeRows">
+				<!-- Employee rows will go here dynamically -->
+			</tbody>
+			<tfoot>
+				<tr class="total-row">
+					<td colspan="2">Labor Hours</td>
+					<td colspan="3" id="totalSundayHours">0</td>
+					<td colspan="3" id="totalMondayHours">0</td>
+					<td colspan="3" id="totalTuesdayHours">0</td>
+					<td colspan="3" id="totalWednesdayHours">0</td>
+					<td colspan="3" id="totalThursdayHours">0</td>
+					<td colspan="3" id="totalFridayHours">0</td>
+					<td colspan="3" id="totalSaturdayHours">0</td>
+					<td id="weeklyTotalHours">0</td>
+				</tr>
+				<tr class="total-row">
+					<td colspan="2">Labor Cost</td>
+					<td colspan="3" id="totalSundayCost">$0.00</td>
+					<td colspan="3" id="totalMondayCost">$0.00</td>
+					<td colspan="3" id="totalTuesdayCost">$0.00</td>
+					<td colspan="3" id="totalWednesdayCost">$0.00</td>
+					<td colspan="3" id="totalThursdayCost">$0.00</td>
+					<td colspan="3" id="totalFridayCost">$0.00</td>
+					<td colspan="3" id="totalSaturdayCost">$0.00</td>
+					<td id="weeklyTotalCost">$0.00</td>
+				</tr>
+			</tfoot>
+		</table>
+
+		<script>
+			const schedulerTable = document.getElementById('schedulerTable');
+			const employeeRows = document.getElementById('employeeRows');
+
+			document.getElementById('addRowButton').addEventListener('click', addEmployeeRow);
+
+			function addEmployeeRow() {
+				const row = document.createElement('tr');
+
+				row.innerHTML = `
+      <td><input type="number" class="payRate" placeholder="$0.00"></td>
+      <td><input type="text" class="employeeName" placeholder="Employee Name"></td>
+      ${generateDayColumns('Sunday')}
+      ${generateDayColumns('Monday')}
+      ${generateDayColumns('Tuesday')}
+      ${generateDayColumns('Wednesday')}
+      ${generateDayColumns('Thursday')}
+      ${generateDayColumns('Friday')}
+      ${generateDayColumns('Saturday')}
+      <td class="weeklyHours">0</td>
+    `;
+
+				// Attach event listeners for dropdown changes
+				row.querySelectorAll('.timeDropdown').forEach((dropdown) => {
+					dropdown.addEventListener('change', calculateTotals);
+				});
+
+				employeeRows.appendChild(row);
+			}
+
+			function generateDayColumns(day) {
+				return `
+      <td><select class="timeDropdown" data-day="${day}" data-type="in">${generateTimeOptions()}</select></td>
+      <td><select class="timeDropdown" data-day="${day}" data-type="out">${generateTimeOptions()}</select></td>
+      <td class="dailyHours" data-day="${day}">0</td>
+    `;
+			}
+
+			function generateTimeOptions() {
+				let options = '';
+				for (let i = 0; i < 24; i++) {
+					const hour = i % 12 === 0 ? 12 : i % 12;
+					const period = i < 12 ? 'AM' : 'PM';
+					options += `<option value="${i}">${hour}${period}</option>`;
+				}
+				return options;
+			}
+
+			function calculateTotals() {
+				let totalWeeklyHours = 0;
+				let totalWeeklyCost = 0;
+
+				// Reset daily totals
+				const dailyTotals = {
+					Sunday: { hours: 0, cost: 0 },
+					Monday: { hours: 0, cost: 0 },
+					Tuesday: { hours: 0, cost: 0 },
+					Wednesday: { hours: 0, cost: 0 },
+					Thursday: { hours: 0, cost: 0 },
+					Friday: { hours: 0, cost: 0 },
+					Saturday: { hours: 0, cost: 0 }
+				};
+
+				// Loop through each employee row
+				Array.from(employeeRows.children).forEach((row) => {
+					const payRate = parseFloat(row.querySelector('.payRate').value) || 0;
+					let weeklyHours = 0;
+
+					['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach(
+						(day) => {
+							const inTime =
+								parseInt(
+									row.querySelector(`.timeDropdown[data-day="${day}"][data-type="in"]`).value
+								) || 0;
+							const outTime =
+								parseInt(
+									row.querySelector(`.timeDropdown[data-day="${day}"][data-type="out"]`).value
+								) || 0;
+							const dailyHours = outTime > inTime ? outTime - inTime : 0;
+
+							row.querySelector(`.dailyHours[data-day="${day}"]`).textContent = dailyHours;
+
+							dailyTotals[day].hours += dailyHours;
+							dailyTotals[day].cost += dailyHours * payRate;
+
+							weeklyHours += dailyHours;
+						}
+					);
+
+					// Update the employee's weekly total hours
+					row.querySelector('.weeklyHours').textContent = weeklyHours;
+					totalWeeklyHours += weeklyHours;
+					totalWeeklyCost += weeklyHours * payRate;
+				});
+
+				// Update daily totals in the footer
+				for (const day in dailyTotals) {
+					document.getElementById(`total${day}Hours`).textContent = dailyTotals[day].hours;
+					document.getElementById(`total${day}Cost`).textContent =
+						`$${dailyTotals[day].cost.toFixed(2)}`;
+				}
+
+				// Update weekly totals
+				document.getElementById('weeklyTotalHours').textContent = totalWeeklyHours;
+				document.getElementById('weeklyTotalCost').textContent = `$${totalWeeklyCost.toFixed(2)}`;
+			}
+		</script>
+	</body>
+</html>

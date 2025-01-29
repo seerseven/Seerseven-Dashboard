@@ -7,11 +7,13 @@
 		FileText,
 		Code,
 		Palette,
-		Clipboard
+		Clipboard,
+		BookImage
 	} from 'lucide-svelte/icons';
 
 	const tabs = [
 		{ name: 'Home', href: '/', icon: Home },
+		{ name: 'Products', href: '/products', icon: BookImage },
 		{ name: 'Gradient Generator', href: '/gradient-generator', icon: Palette },
 		{ name: 'Conversion Tables', href: '/conversion-tables', icon: Calculator },
 		{ name: 'Tab 3', href: '/tab-3', icon: Layout },
@@ -25,7 +27,7 @@
 </script>
 
 <div
-	class={`flex h-full flex-col bg-gray-800 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-14'}`}
+	class={`fixed left-0 top-0 flex h-screen flex-col bg-gray-800 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-14'}`}
 >
 	<!-- Header with Toggle Button -->
 	<div class="flex items-center justify-between p-4">
