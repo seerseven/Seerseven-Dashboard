@@ -25,7 +25,7 @@
 </script>
 
 <div
-	class="product-card card-bg border-satori-blue/30 relative flex max-w-[401px] flex-col rounded-lg border shadow-lg"
+	class="product-card card-bg relative flex w-[401px] flex-col rounded-lg border border-satori-blue/30 shadow-lg"
 >
 	<!-- White Background Area -->
 	<div class="product-bg relative rounded-t-lg text-white" style="width: 400px; height: 400px;">

@@ -9,7 +9,6 @@
 		'https://blabbttpifwpmqyddbvp.supabase.co/storage/v1/object/public/mockups/unisex-tshirt/front';
 
 	let selectedColor = $state('White'); // Default color
-	let isExpanded = $state(false); // State for the color picker
 
 	// Dynamically compute the product image URL
 	let productImage = $derived(() => `${baseUrl}/${selectedColor}.webp`);
@@ -144,14 +143,23 @@
 		};
 	}
 
-	function toggleExpand() {
-		isExpanded = !isExpanded;
-	}
-
 	function selectColor(color: string) {
 		selectedColor = color;
 		initializeCanvas();
-		isExpanded = false;
+	}
+
+	let isActive = $state(false);
+
+	function toggleShape() {
+		isActive = !isActive;
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			// Prevent default so space/enter doesn't scroll the page
+			event.preventDefault();
+			toggleShape();
+		}
 	}
 </script>
 
@@ -164,27 +172,20 @@
 
 	<!-- Color Picker Button -->
 	<div class="relative">
-		<!-- Expandable Color Picker Button -->
-		<button
-			class="absolute bottom-2 left-2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-white shadow-lg hover:bg-slate-700 focus:outline-none"
-			onclick={toggleExpand}
-			aria-expanded={isExpanded}
-			aria-label="Toggle color picker"
+		<div
+			class="icon absolute bottom-5 left-5 z-30"
+			role="button"
+			tabindex="0"
+			onclick={toggleShape}
+			onkeydown={handleKeydown}
 		>
 			<Palette class="h-6 w-6" />
-		</button>
-
-		<!-- Expanded Color Picker -->
-		<div
-			class={`absolute bottom-0 left-0 right-0 z-10 bg-slate-900 transition-all duration-300 ease-in-out ${
-				isExpanded ? 'h-[calc(100%-20px)]' : 'h-0'
-			}`}
-			style="overflow: hidden; border-radius: 8px 8px 0 0;"
-		>
+		</div>
+		<div class={`shape absolute bottom-2 left-2 z-20 ${isActive ? 'active' : ''}`}>
 			<div
-				class={`grid h-full w-full grid-cols-6 gap-2 p-4 ${
-					isExpanded ? 'opacity-100' : 'opacity-0'
-				} transition-opacity duration-300`}
+				class={`inner-shape mx-auto grid grid-cols-6 gap-2 overflow-y-scroll p-4 ${
+					isActive ? 'open' : ''
+				}`}
 			>
 				{#each colors as color}
 					<div
@@ -192,7 +193,10 @@
 						tabindex="0"
 						class="h-8 w-8 cursor-pointer rounded-full border-2 border-white shadow-md transition-transform hover:scale-125 focus:outline-none focus:ring-2 focus:ring-blue-500"
 						style="background-color: {color.hex}"
-						onclick={() => selectColor(color.name)}
+						onclick={() => {
+							selectColor(color.name);
+							toggleShape();
+						}}
 						onkeydown={(event) =>
 							(event.key === 'Enter' || event.key === ' ') && selectColor(color.name)}
 					></div>
@@ -208,5 +212,60 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
 		gap: 0.5rem;
+	}
+
+	.shape {
+		width: 50px;
+		height: 50px;
+		background-color: rgb(9, 7, 21);
+		border-radius: 50%;
+		transition: all 500ms ease;
+		cursor: pointer;
+	}
+
+	.inner-shape {
+		width: 50px;
+		height: 50px;
+		opacity: 0;
+		background-color: rgb(9, 7, 21);
+
+		transition: all 500ms ease;
+		cursor: pointer;
+		--sb-track-color: #1d272b;
+		--sb-thumb-color: #465365;
+		--sb-size: 14px;
+		overflow-y: auto;
+	}
+
+	.inner-shape::-webkit-scrollbar {
+		width: var(--sb-size);
+	}
+
+	.inner-shape::-webkit-scrollbar-track {
+		background: var(--sb-track-color);
+		border-radius: 9px;
+	}
+
+	.inner-shape::-webkit-scrollbar-thumb {
+		background: var(--sb-thumb-color);
+		border-radius: 9px;
+	}
+
+	@supports not selector(::-webkit-scrollbar) {
+		.inner-shape {
+			scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+		}
+	}
+	.open {
+		width: 340px;
+		height: 330px;
+		opacity: 1;
+		padding: 1rem;
+	}
+	.active {
+		width: 380px;
+		height: 380px;
+		border-radius: 1rem;
+		padding: 1rem;
 	}
 </style>

@@ -14,7 +14,7 @@
 <div class="product-wrapper h-[2000px] w-full">
 	<FileUpload imageUpload={handleGlobalUpload} />
 
-	<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+	<div class="flex gap-4">
 		<ProductTshirt
 			{globalImage}
 			bind:localImage
@@ -38,3 +38,6 @@
 		/>
 	</div>
 </div>
+
+<style>
+</style>
